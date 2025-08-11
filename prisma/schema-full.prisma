@@ -1,0 +1,499 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  password       String
+  firstName      String
+  lastName       String
+  role           UserRole     @default(USER)
+  isActive       Boolean      @default(true)
+  emailVerified  Boolean      @default(false)
+  profileImage   String?
+  phoneNumber    String?
+  address        String?
+  city           String?
+  state          String?
+  zipCode        String?
+  country        String?
+  
+  // Relations
+  properties     Property[]
+  investments    Investment[]
+  transactions   Transaction[]
+  reports        Report[]
+  notifications  Notification[]
+  refreshTokens  RefreshToken[]
+  activities     Activity[]
+  
+  // Timestamps
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lastLoginAt    DateTime?
+  
+  @@index([email])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  token       String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  
+  @@index([token])
+  @@index([userId])
+}
+
+// Property Management
+model Property {
+  id                String          @id @default(uuid())
+  name              String
+  type              PropertyType
+  status            PropertyStatus  @default(AVAILABLE)
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  country           String
+  latitude          Float?
+  longitude         Float?
+  
+  // Property Details
+  yearBuilt         Int
+  squareFeet        Int
+  lotSize           Float?
+  bedrooms          Int?
+  bathrooms         Float?
+  parking           Int?
+  description       String?
+  features          String[]
+  images            PropertyImage[]
+  
+  // Financial Information
+  purchasePrice     Float
+  currentValue      Float
+  monthlyRent       Float?
+  monthlyExpenses   Float?
+  propertyTax       Float?
+  insurance         Float?
+  hoa               Float?
+  managementFee     Float?
+  
+  // Metrics
+  capRate           Float?
+  cashFlow          Float?
+  roi               Float?
+  occupancyRate     Float?
+  
+  // Relations
+  ownerId           String
+  owner             User            @relation(fields: [ownerId], references: [id])
+  investments       Investment[]
+  transactions      Transaction[]
+  documents         Document[]
+  maintenanceRecords MaintenanceRecord[]
+  tenants           Tenant[]
+  analytics         PropertyAnalytics[]
+  
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([ownerId])
+  @@index([status])
+  @@index([type])
+}
+
+model PropertyImage {
+  id          String   @id @default(uuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url         String
+  caption     String?
+  isPrimary   Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  @@index([propertyId])
+}
+
+// Investment Tracking
+model Investment {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  propertyId      String
+  property        Property    @relation(fields: [propertyId], references: [id])
+  
+  investmentAmount Float
+  ownershipPercentage Float
+  investmentDate  DateTime
+  exitDate        DateTime?
+  status          InvestmentStatus @default(ACTIVE)
+  
+  // Returns
+  totalReturn     Float?
+  annualizedReturn Float?
+  cashOnCashReturn Float?
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([userId])
+  @@index([propertyId])
+  @@index([status])
+}
+
+// Financial Transactions
+model Transaction {
+  id              String          @id @default(uuid())
+  type            TransactionType
+  category        TransactionCategory
+  amount          Float
+  date            DateTime
+  description     String?
+  
+  // Relations
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  propertyId      String?
+  property        Property?       @relation(fields: [propertyId], references: [id])
+  
+  // Additional Info
+  paymentMethod   PaymentMethod?
+  referenceNumber String?
+  notes           String?
+  attachments     String[]
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([userId])
+  @@index([propertyId])
+  @@index([type])
+  @@index([date])
+}
+
+// Tenant Management
+model Tenant {
+  id              String      @id @default(uuid())
+  propertyId      String
+  property        Property    @relation(fields: [propertyId], references: [id])
+  
+  firstName       String
+  lastName        String
+  email           String
+  phoneNumber     String
+  
+  leaseStart      DateTime
+  leaseEnd        DateTime
+  monthlyRent     Float
+  securityDeposit Float
+  status          TenantStatus @default(ACTIVE)
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([propertyId])
+  @@index([status])
+}
+
+// Maintenance Records
+model MaintenanceRecord {
+  id              String              @id @default(uuid())
+  propertyId      String
+  property        Property            @relation(fields: [propertyId], references: [id])
+  
+  type            MaintenanceType
+  description     String
+  cost            Float
+  date            DateTime
+  vendor          String?
+  status          MaintenanceStatus   @default(PENDING)
+  priority        MaintenancePriority @default(MEDIUM)
+  
+  scheduledDate   DateTime?
+  completedDate   DateTime?
+  notes           String?
+  attachments     String[]
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  
+  @@index([propertyId])
+  @@index([status])
+  @@index([priority])
+}
+
+// Documents
+model Document {
+  id              String          @id @default(uuid())
+  propertyId      String
+  property        Property        @relation(fields: [propertyId], references: [id])
+  
+  type            DocumentType
+  name            String
+  url             String
+  size            Int
+  mimeType        String
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([propertyId])
+  @@index([type])
+}
+
+// Analytics & Reporting
+model PropertyAnalytics {
+  id              String      @id @default(uuid())
+  propertyId      String
+  property        Property    @relation(fields: [propertyId], references: [id])
+  
+  date            DateTime
+  
+  // Metrics
+  occupancyRate   Float
+  revenue         Float
+  expenses        Float
+  netIncome       Float
+  cashFlow        Float
+  
+  // Market Data
+  marketValue     Float?
+  comparableRent  Float?
+  marketTrend     String?
+  
+  createdAt       DateTime    @default(now())
+  
+  @@unique([propertyId, date])
+  @@index([propertyId])
+  @@index([date])
+}
+
+model Report {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  
+  type            ReportType
+  name            String
+  description     String?
+  data            Json
+  url             String?
+  
+  generatedAt     DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([type])
+}
+
+// Activity Tracking
+model Activity {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  
+  type            ActivityType
+  action          String
+  entityType      String?
+  entityId        String?
+  metadata        Json?
+  ipAddress       String?
+  userAgent       String?
+  
+  createdAt       DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// Notifications
+model Notification {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id])
+  
+  type            NotificationType
+  title           String
+  message         String
+  isRead          Boolean             @default(false)
+  metadata        Json?
+  
+  createdAt       DateTime            @default(now())
+  readAt          DateTime?
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// Market Data (for caching external API data)
+model MarketData {
+  id              String      @id @default(uuid())
+  city            String
+  state           String
+  
+  averagePrice    Float
+  medianPrice     Float
+  pricePerSqFt    Float
+  averageRent     Float
+  medianRent      Float
+  rentPerSqFt     Float
+  
+  inventoryLevel  Int
+  daysOnMarket    Int
+  absorptionRate  Float?
+  
+  dataDate        DateTime
+  source          String
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@unique([city, state, dataDate])
+  @@index([city, state])
+  @@index([dataDate])
+}
+
+// ENUMS
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum PropertyType {
+  SINGLE_FAMILY
+  MULTI_FAMILY
+  CONDO
+  TOWNHOUSE
+  APARTMENT
+  COMMERCIAL
+  LAND
+  OTHER
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  FOR_SALE
+  SOLD
+}
+
+enum InvestmentStatus {
+  ACTIVE
+  EXITED
+  PENDING
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  INVESTMENT
+  WITHDRAWAL
+}
+
+enum TransactionCategory {
+  RENT
+  MAINTENANCE
+  REPAIR
+  TAX
+  INSURANCE
+  UTILITY
+  MANAGEMENT
+  MORTGAGE
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  BANK_TRANSFER
+  CREDIT_CARD
+  DEBIT_CARD
+  OTHER
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  EVICTED
+  PENDING
+}
+
+enum MaintenanceType {
+  REPAIR
+  INSPECTION
+  UPGRADE
+  EMERGENCY
+  ROUTINE
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DocumentType {
+  LEASE
+  DEED
+  INSURANCE
+  TAX
+  INSPECTION
+  PHOTO
+  CONTRACT
+  OTHER
+}
+
+enum ReportType {
+  FINANCIAL
+  PERFORMANCE
+  TAX
+  PORTFOLIO
+  CUSTOM
+}
+
+enum ActivityType {
+  LOGIN
+  LOGOUT
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  EXPORT
+  IMPORT
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+  REMINDER
+  ALERT
+}

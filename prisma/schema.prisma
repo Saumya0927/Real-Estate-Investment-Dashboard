@@ -1,0 +1,79 @@
+// Multi-user schema for Real Estate Investment Dashboard
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Multi-user authentication system
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  password       String
+  firstName      String
+  lastName       String
+  role           String       @default("USER") // USER, ADMIN
+  isActive       Boolean      @default(true)
+  
+  properties     Property[]
+  transactions   Transaction[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Property {
+  id                String          @id @default(uuid())
+  name              String
+  type              String          // SINGLE_FAMILY, MULTI_FAMILY, CONDO, etc.
+  status            String          @default("AVAILABLE")
+  address           String
+  city              String
+  state             String
+  zipCode           String
+  
+  yearBuilt         Int?
+  squareFeet        Int?
+  bedrooms          Int?
+  bathrooms         Float?
+  description       String?
+  
+  purchasePrice     Float
+  currentValue      Float?
+  monthlyRent       Float?
+  monthlyExpenses   Float?
+  
+  ownerId           String          
+  owner             User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model Transaction {
+  id              String       @id @default(uuid())
+  type            String       // INCOME, EXPENSE
+  category        String       // RENT, MAINTENANCE, REPAIR, etc.
+  amount          Float
+  date            DateTime
+  description     String?
+  paymentMethod   String?      // CASH, CHECK, BANK_TRANSFER, etc.
+  notes           String?
+  
+  propertyId      String?
+  property        Property?    @relation(fields: [propertyId], references: [id])
+  
+  userId          String       
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  @@index([type])
+  @@index([category])
+  @@index([date])
+}

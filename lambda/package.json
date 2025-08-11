@@ -1,0 +1,9 @@
+{
+  "name": "lambda-functions",
+  "version": "1.0.0",
+  "description": "Lambda functions for Real Estate Investment Dashboard",
+  "scripts": {
+    "start": "python local_server.py",
+    "install-deps": "pip install -r requirements.txt && pip install flask flask-cors"
+  }
+}
