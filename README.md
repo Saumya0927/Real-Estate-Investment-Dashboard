@@ -2,9 +2,7 @@
 
 A comprehensive web application for managing and analyzing real estate investments with secure authentication, interactive visual analytics, and complete CRUD functionality. Built with Next.js 14, Node.js/Express backend, and Prisma ORM with SQLite database.
 
-> **⚠️ DEVELOPMENT VERSION**: This is a test development version of the application, not intended for production use. The codebase is under active development and may contain bugs or incomplete features. Use at your own risk for testing and development purposes only.
-
-> **Note**: This project is under active development and may contain bugs or incomplete features. Several bug fixes and enhancements are planned. Contributions are welcome!
+> **Note**: This project is under active development and may contain bugs or incomplete features. Several bug fixes and enhancements are planned. Contributions are welcome.
 
 ## Features
 
